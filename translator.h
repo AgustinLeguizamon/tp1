@@ -31,7 +31,7 @@ char* _translator_msg_maker(char words[][WORD_BUF],
 int	_translator_append_header_signature(char** cursor, 
 	int body_len, int id, int total_header_len);
 
-int _translator_append_path(char** cursor, int path_len, char* word);
+int _translator_append_path(char** cursor, char* word);
 
 int _translator_append_destiny(char** cursor, char* word);
 

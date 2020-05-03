@@ -8,7 +8,11 @@
 #define MAX_LINE_SIZE 250
 #define ARRAY_WITH_ARGUMENTS 5
 #define ARRAY_WO_ARGUMENTS 4
-
+#define PATH 1
+#define DESTINY 6
+#define INTERFACE 2
+#define METHOD 3
+#define SIGNATURE 8
 #define HEADER_SIGNATURE_UINT32_N 3
 
 void server_create(server_t *self, char const* argv){
@@ -49,16 +53,10 @@ void server_run(server_t *self){
 
 		socket_state = socket_receive(&(self->server_socket), 
 			buffer, HEADER_SIGNATURE_LEN);
-		printf("SOCKET: %d\n", socket_state);
 		if(socket_state > 0){
 			cursor = buffer;
 			_server_read_header_signature(&cursor, header_info);
 			
-		printf("HEADER\n");
-		for (int i = 0; i < 10; i++){
-			printf("%02x ", buffer[i]);
-		} //TEST
-
 			socket_receive(&(self->server_socket), buffer, (header_info[2]+1));	
 			n_arguments = _server_read_header(buffer, header_info, array_info);
 			body_len = header_info[0];
@@ -70,7 +68,6 @@ void server_run(server_t *self){
 
 			_server_show(header_info, array_info, body_info, n_arguments);
 			_server_response(self);
-		//	j++;
 		}
 	}
 }
@@ -81,10 +78,6 @@ int _server_read_header(char* buffer,
 	int n_arguments = 0;
 	int body_len = header_info[0];
 
-	for (int i = 0; i < 3; ++i){
-		printf("header info: %u\n", header_info[i]);
-	}
-
 	n_arguments = _server_read_header_array(&cursor, array_info, body_len);
 
 	return n_arguments;
@@ -94,12 +87,6 @@ int _server_read_body(char* buffer,
 		char body_info[][BUFF_SIZE], int n_arguments){
 	int i = 0;
 	char* cursor = buffer;
-
-	printf("BODY\n");
-	for (int i = 0; i < 10; i++){
-		printf("%02x ", buffer[i]);
-	} //TEST
-	printf("\n ");
 
 	while(i < n_arguments){
 		cursor = _server_read_one_argument(cursor, body_info[i]);	
@@ -112,7 +99,7 @@ int _server_read_body(char* buffer,
 
 char* _server_read_one_argument(char* cursor, char body_argument[]){
 	uint32_t arg_len = *((uint32_t*)cursor);
-	printf("arg_len:%u\n", arg_len);
+
 	cursor += sizeof(uint32_t);
 		for (int i = 0; i < arg_len; i++){
 			body_argument[i] = *cursor;
@@ -125,8 +112,6 @@ char* _server_read_one_argument(char* cursor, char body_argument[]){
 int _server_read_header_signature(char** cursor, uint32_t header_info[]){
 	int ret = 0;
 	uint32_t len;
-
-	printf("READING HEADER SIGNATURE\n");
 
 	if(**cursor != 'l'){
 		ret =-1;
@@ -155,32 +140,21 @@ int _server_read_header_array(char** cursor,
 	while (i < options_to_read){
 		if (**cursor != 0){
 			option = **cursor;
-			printf("option: %d\n", option);
 			switch(option){
-				case 1:
-					printf("PATH \n");
+				case PATH:
 					cursor = _server_read_option(cursor, array_info[1]);
-					printf("%s\n", array_info[1]);
 					break;
-				case 6:
-					printf("DESTINO \n");
+				case DESTINY:
 					cursor = _server_read_option(cursor, array_info[0]);
-					printf("%s\n", array_info[0]);	
 					break;
-				case 2:
-					printf("INTERFAZ \n");
+				case INTERFACE:
 					cursor = _server_read_option(cursor, array_info[2]);
-					printf("%s\n", array_info[2]);	
 					break;
-				case 3:
-					printf("METODO \n");
+				case METHOD:
 					cursor = _server_read_option(cursor, array_info[3]);
-					printf("%s\n", array_info[3]);	
 					break;
-				case 8:
-					printf("FIRMA \n");
+				case SIGNATURE:
 					arguments_amount = _server_read_signature(cursor);
-					printf("arg_amount:%d\n", arguments_amount);
 					break;
 			}
 			i++;
@@ -197,11 +171,9 @@ char** _server_read_option(char** cursor, char input_string[]){
 
 	(*cursor) += sizeof(uint32_t); //cursor apunta a long
 	option_len = *((uint32_t*) (*cursor));
-	printf("len: %u\n", option_len);
 
 	(*cursor) += sizeof(uint32_t); //cursor apunta array
 	for (int i = 0; i < option_len+1; ++i){
-		printf("char: %c\n", **cursor);
 		input_string[i]=(**cursor);
 		(*cursor)++;
 	}

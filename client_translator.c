@@ -21,7 +21,6 @@ int _translator_method_separator(char words[][WORD_BUF]){
 	char* arg_ptr = strchr(words[3], delim);
 	char method[WORD_BUF]="";
 
-	printf("PRIntING WORD 3: %s\n", words[3]);
 	int word_len = strlen(words[3]);
 	int arg_len= strlen(arg_ptr);
 	int dif = word_len - arg_len;
@@ -50,7 +49,6 @@ int _translator_arg_separator(char words[][WORD_BUF], char* arg_ptr){
 	token = strtok(word_buffer, ct);
 	while (token != NULL){	
 		strncpy(words[i], token, WORD_BUF);
-		printf("words_arg[%d]: %s\n",i, words[i]);
 		token = strtok(NULL, ct);
 		i++;
 		n_arg++;
@@ -69,22 +67,14 @@ int _translator_separator(char* input_line, char words[][WORD_BUF]){
 	sscanf(input_line, "%s %s %s %s",
 		destiny, path, interface, method_and_args);
 	
-	printf("PRINTING METHODS_AND_ARGS:%s\n", method_and_args);
-
 	strncpy(words[0], destiny, WORD_BUF);
 	strncpy(words[1], path, WORD_BUF);
 	strncpy(words[2], interface, WORD_BUF);
 	strncpy(words[3], method_and_args, WORD_BUF);
 
-	printf("PRINTING WORDS[3] afcpy:%s\n", words[3]);
 	_translator_method_separator(words);
 	n_arg = _translator_arg_separator(words, arg_ptr);
 
-/*
-	for (int i = 0; i < (OFFSET + n_arg); i++) {
-		printf("Word[%d]: %s\n",i , words[i]);//TEST
-	}
-*/	printf("N_ARG: %d\n", n_arg );
 	return n_arg;
 }
 
@@ -92,6 +82,7 @@ message_t translator_dbus(char* input_line, int id){
 	char words[N_WORDS][WORD_BUF];
 	message_t message;
 	int n_arg=0;
+
 	/*inicializao matriz*/
 	for (int i = 0; i < N_WORDS; ++i){
 		memset(words[i],0,sizeof(words[i]));
@@ -102,7 +93,6 @@ message_t translator_dbus(char* input_line, int id){
 	char* body = _translator_make_body(words, n_arg);
 	message.header = header;
 	message.body = body;
-
 
 	return message;
 }
@@ -115,14 +105,6 @@ char* _translator_make_body(char words[][WORD_BUF], int n_arg){
     memset(body, 0, body_len);
 
 	_translator_append_body(&cursor, words, n_arg);
-
-	printf("long cuerpo: %u\n", body_len);
-	printf("\n");
-	printf("BODY: \n");
-	for (int i = 0; i < body_len ; ++i){
-		printf("%02x ", body[i]);
-	}
-	printf("\n");
 
 	return body;
 }
@@ -182,19 +164,14 @@ char* _translator_msg_maker(char words[][WORD_BUF], int n_arg,
     char* cursor = header;
 
 	_translator_append_header_signature(&cursor, body_len, id, total_header_len);
-	_translator_append_path(&cursor, path_len, words[1]);
+	_translator_append_path(&cursor, words[1]);
 	_translator_append_destiny(&cursor, words[0]);
 	_translator_append_interface(&cursor, words[2]);
 	_translator_append_method(&cursor, words[3]);
+
 	if(n_arg > 0){
 		_translator_append_signature(&cursor, n_arg);
 	}
-
-	printf("HEXA\n");
-	for (int i = 0; i < total_header_len + HEADER_SIGNATURE_LEN; i++){
-		printf("%02x ", header[i]);
-	}
-	printf("Total len: %d\n", (total_header_len + HEADER_SIGNATURE_LEN) );
 
 	message->header_len = (total_header_len+HEADER_SIGNATURE_LEN);
 	message->body_len = body_len;
@@ -227,7 +204,7 @@ int	_translator_append_header_signature(char** cursor, int body_len,
 }
 
 
-int _translator_append_path(char** cursor, int path_len, char* word){
+int _translator_append_path(char** cursor, char* word){
 	**cursor = 1;
 	(*cursor)++;
 	**cursor = 1;
@@ -263,7 +240,6 @@ int _translator_append_destiny(char** cursor, char* word){
 	(*cursor) += 4;
 	
 	int destiny_with_padding = _translator_round_up(strlen(word)+1);
-	printf("destiny: %d\n", destiny_with_padding);
 	for (int i = 0; i < destiny_with_padding; ++i){
 		**cursor = word[i];
 		(*cursor)++;

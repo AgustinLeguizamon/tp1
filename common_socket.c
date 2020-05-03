@@ -44,7 +44,6 @@ int socket_bind_and_listen(socket_t *self, const char* service){
 	
 		if(bind(socket_file_descriptor, rp->ai_addr, rp->ai_addrlen) == 0){
 			success = true;
-			printf("LISTENING\n");
 
 			listen(socket_file_descriptor, backlog); 
 			/*Salvo el sfd en el struct para no perderlo al final de esta funcion*/
@@ -71,8 +70,6 @@ int socket_accept(socket_t *self, socket_t *server_socket){
 	server_socket->socket_file_descriptor = accept(acep_file_descriptor, 
 		(struct sockaddr *) &peer_addr, &peer_addr_size);
 
-	printf("ACCEPTED \n");
-
 	return 0;
 }
 
@@ -98,7 +95,6 @@ int socket_connect(socket_t *self, const char* host_name, const char* service){
 	
 		if(connect(socket_file_descriptor, rp->ai_addr, rp->ai_addrlen) != ERROR){
 			success = true;
-			printf("CONNECTION SUCCESS \n");
 			self->socket_file_descriptor = socket_file_descriptor;
 		} else {	
 			rp = rp->ai_next;
@@ -117,7 +113,6 @@ int socket_send(socket_t *self, const char* buffer, size_t length){
 
 	while (bytes_sent < length && n_send > 0){
 		n_send = send(self->socket_file_descriptor, buffer, length, MSG_NOSIGNAL);
-		printf("Bytes sent: %ld \n", n_send); //TEST
 		bytes_sent += n_send;
 	}
 	
@@ -131,14 +126,8 @@ int socket_receive(socket_t *self, char* buffer, size_t length){
 
 	while (bytes_recv < length && n_recv > 0){
 		n_recv = recv(self->socket_file_descriptor, buffer, length, 0);
-		printf("recv: %ld \n", n_recv); //TEST
 		bytes_recv += n_recv;
-	}
-
-	printf("Recieved %d bytes \n", bytes_recv); //TEST
-	fwrite(buffer, bytes_recv, 1, stdout); //TEST
-	printf("\n"); //TEST
-	
+	}	
 	return n_recv;
 }
 

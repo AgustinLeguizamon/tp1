@@ -35,8 +35,6 @@ char* file_reader_read_file(file_reader_t *self, int *file_status){
 		*file_status = EOF;
 	}
 	
-	long pos = ftell(self->input);
-	printf("pos: %li\n", pos);
 	/*Ve el siguiente caracter por si este es EOF
 	caso que se da si la siguiente linea esta vacia
 	*/
@@ -44,7 +42,6 @@ char* file_reader_read_file(file_reader_t *self, int *file_status){
 		*file_status = EOF;
 	} else {
 		fseek(self->input, -1, SEEK_CUR);
-		printf("pos: %li\n", pos);
 	}
 
 	return input_line;
@@ -56,15 +53,12 @@ int _file_reader_read_block(file_reader_t *self, char buffer[]){
 	while ((i < READ_SIZE-1) && (found_new_line == 0)){
 		character = fgetc(self->input);
 		if(character != EOF){
-			printf("%d char: %c\n",i, character);
 			buffer[i] = character;
 			if(character == NEW_LINE){
-				printf("NEW LINE\n");
 				found_new_line = 1;
 				_file_reader_clean_buffer(buffer, i);
 			}
 		} else {
-			printf("EL END OF FILE\n");
 			found_new_line = EOF;
 			_file_reader_clean_buffer(buffer, i);
 		}

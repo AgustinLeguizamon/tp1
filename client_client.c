@@ -32,11 +32,7 @@ void client_run(client_t *self){
     while (file_status != EOF){
     	input_line = file_reader_read_file(&(self->file_reader), &file_status);
 		message_t message = translator_dbus(input_line, id);
-		
-		printf("INPUT LINE: %s\n", input_line);
-		printf("asdasd %d\n", message.header_len);
-		printf("asdasdas %d\n", message.body_len);
-		
+				
 		socket_send(&(self->client_socket), message.header, message.header_len);
 		socket_send(&(self->client_socket), message.body, message.body_len);
 		socket_receive(&(self->client_socket), response, SERVER_RESPONSE_LEN);

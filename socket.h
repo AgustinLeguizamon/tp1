@@ -11,7 +11,6 @@ typedef struct socket_t{
 
 int socket_create(socket_t *self);
 
-
 /* Asigna una direccion al socket y lo marca como socket pasivo
 (lado del servidor)
 */
