@@ -187,7 +187,7 @@ int _server_show(uint32_t header_info[], char array_info[][BUFF_SIZE],
 		char body_info[][BUFF_SIZE], int n_arguments){
 	printf("* Id: 0x%08x\n", header_info[1]);
 	printf("* Destino: %s\n", array_info[0]);
-	printf("* Path: %s\n", array_info[1]);
+	printf("* Ruta: %s\n", array_info[1]);
 	printf("* Interfaz: %s\n", array_info[2]);
 	printf("* Metodo: %s\n", array_info[3]);
 	if(n_arguments > 0){
