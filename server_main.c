@@ -9,4 +9,6 @@ int main(int argc, char const *argv[]){
 	server_create(&server, argv[1]);
 	server_run(&server);
 	server_destroy(&server);
+
+	return 0;
 }

@@ -3,7 +3,7 @@
 #include "client.h"
 #include "translator.h"
 
-#define MAX_ARG_LEN 10 //max largo de los argv
+#define MAX_ARG_LEN 30 //max largo de los argv
 #define SERVER_RESPONSE_LEN 3 //OK
 
 void client_create(client_t *self, int argc, char const *argv[]){
@@ -46,7 +46,7 @@ void client_run(client_t *self){
 }
 
 int _client_show(char* response, int id){
-	printf("0x%08x: %s\n", id, response);
+	printf("0x%08x: %s", id, response);
 
 	return 0;
 }

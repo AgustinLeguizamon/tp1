@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "server.h"
 
-#define MAX_ARG_SIZE 10
+#define MAX_ARG_SIZE 30
 #define MAX_ARG_AMOUNT 32
 #define HEADER_SIGNATURE_LEN 16
 #define MAX_LINE_SIZE 250
@@ -189,9 +189,9 @@ int _server_show(uint32_t header_info[], char array_info[][BUFF_SIZE],
 	printf("* Destino: %s\n", array_info[0]);
 	printf("* Path: %s\n", array_info[1]);
 	printf("* Interfaz: %s\n", array_info[2]);
-	printf("* Método: %s\n", array_info[3]);
+	printf("* Metodo: %s\n", array_info[3]);
 	if(n_arguments > 0){
-		printf("* Parámetros:\n");
+		printf("* Parametros:\n");
 		for (int i = 0; i < n_arguments; ++i){
 			printf("    * %s\n", body_info[i]);
 		}
