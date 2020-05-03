@@ -20,13 +20,15 @@ void server_create(server_t *self, char const* argv){
 	char service[MAX_ARG_SIZE];	
 	socket_t acep_socket;
 	socket_t server_socket;
+	
+	socket_create(&acep_socket);
+	socket_create(&server_socket);
 
 	self->acep_socket = acep_socket;
 	self->server_socket = server_socket;
 
 	strncpy(service, argv, max_arg_size);
 	
-	socket_create(&(self->acep_socket));
 	socket_bind_and_listen(&(self->acep_socket), service);
 	socket_accept(&(self->acep_socket), &(self->server_socket));
 }

@@ -11,6 +11,8 @@ typedef struct client_t{
 
 void client_create(client_t *self, int argc, char const *argv[]);
 
+int _client_connect_to_server(client_t *self, char* host_name, char* service);
+
 void client_run(client_t *self);
 
 int _client_show(char* response, int id);

@@ -12,14 +12,15 @@ void client_create(client_t *self, int argc, char const *argv[]){
 	char host_name[MAX_ARG_LEN], service[MAX_ARG_LEN];
 	int max_length = MAX_ARG_LEN;
 
-	self->file_reader = file_reader;
-	self->client_socket = client_socket;
+	file_reader_create(&file_reader, argc, argv[3]);
+	socket_create(&client_socket);
 
 	strncpy(host_name, argv[1], max_length);
 	strncpy(service, argv[2], max_length);
+	
+	self->file_reader = file_reader;
+	self->client_socket = client_socket;
 
-	file_reader_create(&(self->file_reader), argc, argv[3]);
-	socket_create(&(self->client_socket));
 	socket_connect(&(self->client_socket), host_name, service);
 }
 
