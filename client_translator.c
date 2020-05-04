@@ -42,7 +42,7 @@ int _translator_arg_separator(char words[][WORD_BUF], char* arg_ptr){
 
 	c = arg_ptr[i]; 
 	while(c != ')'){
-		if (c != ',' && c != ' '){
+		if (c != ','){
 			word_buffer[k] = c;
 			k++;
 		}
