@@ -33,27 +33,35 @@ int _translator_method_separator(char words[][WORD_BUF]){
 }
 
 int _translator_arg_separator(char words[][WORD_BUF], char* arg_ptr){
-	int i = OFFSET, n_arg = 0;
-	const char ct[3] = COMMA;
-	char* token;
-	char copy_arg_ptr[WORD_BUF]="";
+	int j = OFFSET, n_arg = 0;
 	char word_buffer[WORD_BUF]="";
+	char c = 0;
+	int i = 0, k=0;
+	
+	i++; //salteo parentesis
 
-	strncpy(copy_arg_ptr, arg_ptr, WORD_BUF);
-
-	//borra el primer y ultimo parenteses
-	char* s = strchr(copy_arg_ptr, RIGHT_PARENTHESIS);
-	memcpy(word_buffer, copy_arg_ptr+1, 
-		strlen(copy_arg_ptr)-(strlen(s)+1)); //remuevo parentesis
-
-	token = strtok(word_buffer, ct);
-	while (token != NULL){	
-		strncpy(words[i], token, WORD_BUF);
-		token = strtok(NULL, ct);
+	c = arg_ptr[i]; 
+	while(c != ')'){
+		if ( c != ',' && c != ' '){
+			word_buffer[k] = c;
+			k++;
+		}
+		if (c == ','){
+			strncpy(words[j], word_buffer, WORD_BUF);
+			memset (word_buffer, 0 ,WORD_BUF);
+			j++;
+			n_arg++;
+			k = 0;
+		}
 		i++;
-		n_arg++;
+		c = arg_ptr[i];
 	}
 
+	if (i > 1){
+		n_arg++;
+		strncpy(words[j], word_buffer, WORD_BUF);
+	}
+	
 	return n_arg;
 }
 
