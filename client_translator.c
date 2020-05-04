@@ -42,13 +42,13 @@ int _translator_arg_separator(char words[][WORD_BUF], char* arg_ptr){
 
 	c = arg_ptr[i]; 
 	while(c != ')'){
-		if ( c != ',' && c != ' '){
+		if (c != ',' && c != ' '){
 			word_buffer[k] = c;
 			k++;
 		}
 		if (c == ','){
 			strncpy(words[j], word_buffer, WORD_BUF);
-			memset (word_buffer, 0 ,WORD_BUF);
+			memset(word_buffer, 0 ,WORD_BUF);
 			j++;
 			n_arg++;
 			k = 0;
