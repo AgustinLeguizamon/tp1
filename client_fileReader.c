@@ -7,7 +7,6 @@
 #define NEW_LINE '\n'
 
 int file_reader_create(file_reader_t *self, int argc, const char* filename){
-	printf("%d\n",argc);
 	if(argc > 3){
 		self->input = fopen(filename, "r");
 	} else {
