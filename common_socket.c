@@ -46,7 +46,7 @@ int socket_bind_and_listen(socket_t *self, const char* service){
 			success = true;
 
 			listen(socket_file_descriptor, backlog); 
-			/*Salvo el sfd en el struct para no perderlo al final de esta funcion*/
+
 			self->socket_file_descriptor = socket_file_descriptor;
 		} else {	
 			rp = rp->ai_next;

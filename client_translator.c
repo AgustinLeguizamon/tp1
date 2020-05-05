@@ -391,3 +391,7 @@ int translator_free(translator_t *self){
 
 	return 0;
 }
+
+int translator_destroy(translator_t *self){
+	return 0;
+}

@@ -28,14 +28,13 @@ int client_create(client_t *self, int argc, char const *argv[]){
 
 int client_run(client_t *self){	
 	int id = 1;
-	int file_status = 0;
 	char response[SERVER_RESPONSE_LEN+1]="";
 
 	translator_t translator;
 	translator_create(&translator);
 	
-    while (file_status != EOF){
-    	file_reader_read_line(&(self->file_reader), &file_status);
+    while (file_reader_status(&(self->file_reader))){
+    	file_reader_read_line(&(self->file_reader));
 		translator_make_message(&translator, &(self->file_reader), id);				
 		socket_send(&(self->client_socket), translator.header, translator.header_len);
 		socket_send(&(self->client_socket), translator.body, translator.body_len);
@@ -46,6 +45,7 @@ int client_run(client_t *self){
 		id++;
 	}
 
+	translator_destroy(&translator);
 	return 0;
 }
 

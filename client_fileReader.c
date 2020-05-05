@@ -12,11 +12,11 @@ int file_reader_create(file_reader_t *self, int argc, const char* filename){
 	} else {
 		self->input = stdin;
 	}
-
+	self->file_status = 0;
 	return 0;
 }
 
-int file_reader_read_line(file_reader_t *self, int *file_status){
+int file_reader_read_line(file_reader_t *self){
 	int found_new_line = 0;
 	int size = READ_SIZE;
 	char* input_line = malloc(READ_SIZE);
@@ -33,14 +33,14 @@ int file_reader_read_line(file_reader_t *self, int *file_status){
 	}
 
 	if (found_new_line == EOF){
-		*file_status = EOF;
+		self->file_status = EOF;
 	}
 	
 	/*Ve el siguiente caracter por si este es EOF
 	caso que se da si la siguiente linea esta vacia
 	*/
 	if(fgetc(self->input) == EOF){
-		*file_status = EOF;
+		self->file_status = EOF;
 	} else {
 		fseek(self->input, -1, SEEK_CUR);
 	}
@@ -76,6 +76,10 @@ int _file_reader_clean_buffer(char buffer[], int index){
 	}
 
 	return 0;
+}
+
+bool file_reader_status(file_reader_t *self){
+	return (self->file_status != EOF);
 }
 
 
