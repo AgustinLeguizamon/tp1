@@ -11,7 +11,7 @@ Padrón: 99535
 ### Introducción:
 A continuacón se da una breve descripcion de los TDAs que componen la implementación del protocolo dbus para la comunicación cliente/servidor a través de sockets TCP en lenguaje C.
 
-![diagrama](img/tallerTP1.png)
+![diagrama](img/TallerTP1.png)
 Figura 1 - Diagrama del socket
 
 A pesar de que C no tiene clases, el estilo UML del diagrama de clases se utiliza para representar la interacción entre los distintos TDA.
