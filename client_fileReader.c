@@ -12,10 +12,11 @@ int file_reader_create(file_reader_t *self, int argc, const char* filename){
 	} else {
 		self->input = stdin;
 	}
+
 	return 0;
 }
 
-char* file_reader_read_file(file_reader_t *self, int *file_status){
+int file_reader_read_line(file_reader_t *self, int *file_status){
 	int found_new_line = 0;
 	int size = READ_SIZE;
 	char* input_line = malloc(READ_SIZE);
@@ -44,7 +45,9 @@ char* file_reader_read_file(file_reader_t *self, int *file_status){
 		fseek(self->input, -1, SEEK_CUR);
 	}
 
-	return input_line;
+	self->input_line = input_line;
+
+	return 0;
 }
 
 int _file_reader_read_block(file_reader_t *self, char buffer[]){
@@ -75,9 +78,16 @@ int _file_reader_clean_buffer(char buffer[], int index){
 	return 0;
 }
 
+
 int file_reader_destroy(file_reader_t *self){
 	if (self->input != stdin){
 		fclose(self->input);
 	}
+	return 0;
+}
+
+int file_reader_free(file_reader_t *self){
+	free(self->input_line);
+
 	return 0;
 }

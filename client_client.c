@@ -4,7 +4,7 @@
 #include "translator.h"
 
 #define MAX_ARG_LEN 30 //max largo de los argv
-#define SERVER_RESPONSE_LEN 3 //OK\n"
+#define SERVER_RESPONSE_LEN 3 //"OK\n"
 
 int client_create(client_t *self, int argc, char const *argv[]){
 	file_reader_t file_reader;
@@ -29,20 +29,20 @@ int client_create(client_t *self, int argc, char const *argv[]){
 int client_run(client_t *self){	
 	int id = 1;
 	int file_status = 0;
-	char* input_line;
 	char response[SERVER_RESPONSE_LEN+1]="";
 
+	translator_t translator;
+	translator_create(&translator);
+	
     while (file_status != EOF){
-    	input_line = file_reader_read_file(&(self->file_reader), &file_status);
-		message_t message = translator_make_message(input_line, id);
-				
-		socket_send(&(self->client_socket), message.header, message.header_len);
-		socket_send(&(self->client_socket), message.body, message.body_len);
+    	file_reader_read_line(&(self->file_reader), &file_status);
+		translator_make_message(&translator, &(self->file_reader), id);				
+		socket_send(&(self->client_socket), translator.header, translator.header_len);
+		socket_send(&(self->client_socket), translator.body, translator.body_len);
 		socket_receive(&(self->client_socket), response, SERVER_RESPONSE_LEN);
 		_client_show(response, id);
-		free(input_line);
-		free(message.header);
-		free(message.body);
+		file_reader_free(&(self->file_reader));
+		translator_free(&translator);
 		id++;
 	}
 

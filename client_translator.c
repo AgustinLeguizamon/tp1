@@ -16,6 +16,13 @@
 
 #define N_WORDS 36 //4 + 32 parametros cantidad de palabras para buffer
 
+int translator_create(translator_t *self){
+	self->header_len = 0;
+	self->body_len = 0;
+
+	return 0;
+}
+
 int _translator_method_separator(char words[][WORD_BUF]){	
 	const char delim = PARENTHESIS;
 	char* arg_ptr = strchr(words[3], delim);
@@ -86,10 +93,12 @@ int _translator_separator(char* input_line, char words[][WORD_BUF]){
 	return n_arg;
 }
 
-message_t translator_make_message(char* input_line, int id){
+int translator_make_message(translator_t *self, file_reader_t *file_reader, 
+		int id){
 	char words[N_WORDS][WORD_BUF];
-	message_t message;
 	int n_arg=0;
+
+	char* input_line = file_reader->input_line;
 
 	/*inicializao matriz*/
 	for (int i = 0; i < N_WORDS; ++i){
@@ -97,15 +106,14 @@ message_t translator_make_message(char* input_line, int id){
 	}
 
 	n_arg = _translator_separator(input_line, words);
-	char* header = _translator_msg_maker(words, n_arg, id, &message);
-	char* body = _translator_make_body(words, n_arg);
-	message.header = header;
-	message.body = body;
+	_translator_make_header(self, n_arg, id, words);
+	_translator_make_body(self, words, n_arg);
 
-	return message;
+	return 0;
 }
 
-char* _translator_make_body(char words[][WORD_BUF], int n_arg){
+int _translator_make_body(translator_t *self, char words[][WORD_BUF], 
+		int n_arg){
 	int body_len = _translator_calculate_body_len(words, n_arg);
 	char* body = malloc(body_len);
     char* cursor = body;
@@ -114,7 +122,9 @@ char* _translator_make_body(char words[][WORD_BUF], int n_arg){
 
 	_translator_append_body(&cursor, words, n_arg);
 
-	return body;
+	self->body = body;
+
+	return 0;
 }
 
 int _translator_append_body(char** cursor, char words[][WORD_BUF], int n_arg){
@@ -149,8 +159,8 @@ int _translator_calculate_signature_len(int n_arg){
 }
 
 
-char* _translator_msg_maker(char words[][WORD_BUF], int n_arg, 
-		int id, message_t *message){
+int _translator_make_header(translator_t *self, int n_arg, 
+		int id, char words[][WORD_BUF]){
 	int dest_len, path_len, intf_len, method_len, body_len, signature_len = 0;
 	int total_header_len;
 	char* cursor;
@@ -181,10 +191,11 @@ char* _translator_msg_maker(char words[][WORD_BUF], int n_arg,
 		_translator_append_signature(&cursor, n_arg);
 	}
 
-	message->header_len = (total_header_len+HEADER_SIGNATURE_LEN);
-	message->body_len = body_len;
+	self->header= header;
+	self->header_len = (total_header_len+HEADER_SIGNATURE_LEN);
+	self->body_len = body_len;
 
-	return header;
+	return 0;
 }
 
 
@@ -372,3 +383,11 @@ int _translator_round_up(int value){
 	return value;
 }
 
+int translator_free(translator_t *self){
+	free(self->header);
+	free(self->body);
+	self->header=0;
+	self->body=0;
+
+	return 0;
+}
