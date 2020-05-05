@@ -4,9 +4,9 @@
 #include "translator.h"
 
 #define MAX_ARG_LEN 30 //max largo de los argv
-#define SERVER_RESPONSE_LEN 3 //OK
+#define SERVER_RESPONSE_LEN 3 //OK\n"
 
-void client_create(client_t *self, int argc, char const *argv[]){
+int client_create(client_t *self, int argc, char const *argv[]){
 	file_reader_t file_reader;
 	socket_t client_socket;
 	char host_name[MAX_ARG_LEN], service[MAX_ARG_LEN];
@@ -22,9 +22,11 @@ void client_create(client_t *self, int argc, char const *argv[]){
 	self->client_socket = client_socket;
 
 	socket_connect(&(self->client_socket), host_name, service);
+
+	return 0;
 }
 
-void client_run(client_t *self){	
+int client_run(client_t *self){	
 	int id = 1;
 	int file_status = 0;
 	char* input_line;
@@ -43,6 +45,8 @@ void client_run(client_t *self){
 		free(message.body);
 		id++;
 	}
+
+	return 0;
 }
 
 int _client_show(char* response, int id){
@@ -52,8 +56,10 @@ int _client_show(char* response, int id){
 }
 
 
-void client_destroy(client_t *self){
+int client_destroy(client_t *self){
 	socket_shutdown(&(self->client_socket), 2);
 	socket_destroy(&(self->client_socket));
 	file_reader_destroy(&(self->file_reader));
+
+	return 0;
 }

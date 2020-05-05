@@ -76,16 +76,6 @@ int server_run(server_t *self){
 	return 0;
 }
 
-int _server_read_header(char* buffer, 
-		uint32_t header_info[], char array_info[][BUFF_SIZE]){
-	char* cursor = buffer;
-	int n_arguments = 0;
-	int body_len = header_info[0];
-
-	n_arguments = _server_read_header_array(&cursor, array_info, body_len);
-
-	return n_arguments;
-}
 
 int _server_read_body(char* buffer, 
 		char body_info[][BUFF_SIZE], int n_arguments){

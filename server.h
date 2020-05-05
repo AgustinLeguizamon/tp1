@@ -15,19 +15,19 @@ typedef struct server_t{
 */
 int server_create(server_t *self, char const* argv);
 
+/*Itera el llamado a la recepcion de mensajes hasta que
+se cierre el canal de comunicacion.Hace 3 recepciones 
+(uno para la firma del header, el header y el cuerpo) y un envio
+*/
+
 int server_run(server_t *self);
 
+/*Lee los bytes del cuerpo del mensaje y guarda los strings
+en @param body_info*/
 int _server_read_body(char* buffer, 
 	char body_info[][BUFF_SIZE], int n_arguments);
 
 char* _server_read_one_argument(char* cursor, char body_argument[]);
-
-/*
-*/
-
-
-int _server_read_header(char* buffer, 
-	uint32_t header_info[], char array_info[][BUFF_SIZE]);
 
 /*Lee los primeros 16 bytes del header, guardando los 3 Uint32
 en un array.

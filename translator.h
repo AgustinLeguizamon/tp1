@@ -23,8 +23,6 @@ char* _translator_make_body(char words[][WORD_BUF], int n_arg);
 
 int _translator_append_body(char** cursor, char words[][WORD_BUF], int n_arg);
 
-char* translator_get_body();
-
 char* _translator_msg_maker(char words[][WORD_BUF], 
 	int n_arg, int id, message_t *message);
 

@@ -149,11 +149,11 @@ int _translator_calculate_signature_len(int n_arg){
 }
 
 
-
 char* _translator_msg_maker(char words[][WORD_BUF], int n_arg, 
 		int id, message_t *message){
 	int dest_len, path_len, intf_len, method_len, body_len, signature_len = 0;
 	int total_header_len;
+	char* cursor;
 
 	dest_len = _translator_calculate_len(words[0]);
 	path_len = _translator_calculate_len(words[1]);
@@ -169,7 +169,7 @@ char* _translator_msg_maker(char words[][WORD_BUF], int n_arg,
 	char* header = malloc(total_header_len + HEADER_SIGNATURE_LEN);
     memset(header, 0, total_header_len + HEADER_SIGNATURE_LEN);
 
-    char* cursor = header;
+    cursor = header;
 
 	_translator_append_header_signature(&cursor, body_len, id, total_header_len);
 	_translator_append_path(&cursor, words[1]);
@@ -371,3 +371,4 @@ int _translator_round_up(int value){
 
 	return value;
 }
+
