@@ -11,7 +11,7 @@ typedef struct message_t{
 	int body_len;
 }message_t;
 
-message_t translator_dbus(char* input_line, int id);
+message_t translator_make_message(char* input_line, int id);
 
 int _translator_separator(char* input_line, char words[][WORD_BUF]);
 

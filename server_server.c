@@ -15,7 +15,7 @@
 #define SIGNATURE 8
 #define HEADER_SIGNATURE_UINT32_N 3
 
-void server_create(server_t *self, char const* argv){
+int server_create(server_t *self, char const* argv){
 	int max_arg_size = MAX_ARG_SIZE;
 	char service[MAX_ARG_SIZE];	
 	socket_t acep_socket;
@@ -31,9 +31,11 @@ void server_create(server_t *self, char const* argv){
 	
 	socket_bind_and_listen(&(self->acep_socket), service);
 	socket_accept(&(self->acep_socket), &(self->server_socket));
+
+	return 0;
 }
 
-void server_run(server_t *self){
+int server_run(server_t *self){
 	char buffer[MAX_LINE_SIZE];
 	uint32_t header_info[HEADER_SIGNATURE_UINT32_N], body_len;
 	char array_info[ARRAY_WO_ARGUMENTS][BUFF_SIZE];
@@ -41,11 +43,8 @@ void server_run(server_t *self){
 	int n_arguments, socket_state = 1;
 	char* cursor; 
 	
-	//while (recibir 3 mensaje:header signature, header y body)
-	/*recibo el header 16 y luego el resto 119 + 1 padding */
-	//int j=1;
 	while(socket_state > 0){
-	/*inicializo matriz*/
+	/*inicializo las matrices*/
 		for (int i = 0; i < MAX_ARG_SIZE; ++i){
 			memset(array_info[i],0,sizeof(array_info[i]));
 		}
@@ -60,8 +59,9 @@ void server_run(server_t *self){
 			_server_read_header_signature(&cursor, header_info);
 			
 			socket_receive(&(self->server_socket), buffer, (header_info[2]+1));	
-			n_arguments = _server_read_header(buffer, header_info, array_info);
+			cursor = buffer;
 			body_len = header_info[0];
+			n_arguments = _server_read_header_array(&cursor, array_info, body_len);
 			socket_receive(&(self->server_socket), buffer, body_len);
 			
 			if(n_arguments > 0){
@@ -69,9 +69,11 @@ void server_run(server_t *self){
 			}
 
 			_server_show(header_info, array_info, body_info, n_arguments);
-			_server_response(self);
+			_server_send_response(self);
 		}
 	}
+
+	return 0;
 }
 
 int _server_read_header(char* buffer, 
@@ -210,7 +212,7 @@ int _server_read_signature(char** cursor){
 }
 					
 
-int _server_response(server_t *self){
+int _server_send_response(server_t *self){
 	char* response = "OK\n";
 
 	socket_send(&(self->server_socket), response, strlen(response));
@@ -218,8 +220,10 @@ int _server_response(server_t *self){
 	return 0;
 }
 
-void server_destroy(server_t *self){
+int server_destroy(server_t *self){
 	socket_shutdown(&(self->server_socket), 2);
 	socket_destroy(&(self->acep_socket));
 	socket_destroy(&(self->server_socket));
+
+	return 0;
 }

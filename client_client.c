@@ -32,7 +32,7 @@ void client_run(client_t *self){
 
     while (file_status != EOF){
     	input_line = file_reader_read_file(&(self->file_reader), &file_status);
-		message_t message = translator_dbus(input_line, id);
+		message_t message = translator_make_message(input_line, id);
 				
 		socket_send(&(self->client_socket), message.header, message.header_len);
 		socket_send(&(self->client_socket), message.body, message.body_len);
