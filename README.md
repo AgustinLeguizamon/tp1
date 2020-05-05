@@ -5,14 +5,14 @@ Estudiante: Agustin Manuel Leguizamón
 
 Padrón: 99535
 
- Link Github: https://github.com/AgustinLeguizamon/tp1
+Link Github: https://github.com/AgustinLeguizamon/tp1
 
 
 ### Introducción:
 A continuacón se da una breve descripcion de los TDAs que componen la implementación del protocolo dbus para la comunicación cliente/servidor a través de sockets TCP en lenguaje C.
 
 ![diagrama](img/TallerTP1.png)
-Figura 1 - Diagrama del socket
+Figura 1 - Relación entre los TDAs
 
 A pesar de que C no tiene clases, el estilo UML del diagrama de clases se utiliza para representar la interacción entre los distintos TDA.
 
@@ -32,7 +32,8 @@ En el primer `socket_send` se envia el "header" del mensaje y luego en el segund
 #### Translator
 
 **translator** se encarga aplicar el protocolo a la linea de texto dada por **fileReader**.
-`translator_make_message` es llamada por **client** para ejecutar esta tarea. Primero `_translator_separator_`separar la linea de texto en cada parametro (destino, ruta, interfaz) luego el metodo y los argumentos se terminan de separar con `_translator_method_separator` y `_translator_arg_separator`, todos son almacenados en un array de char*. Luego `_translator_make_header` se encarga de armar la cabecera del mensaje y `_translator_make_body` el cuerpo. Una vez armado se tiene el struct translator_t con todos la informacion necesaria para enviar el mensaje.
+`translator_make_message` es llamada por **client** para ejecutar esta tarea. Primero `_translator_separator_`separar la linea de texto en cada parametro (destino, ruta, interfaz) luego el metodo y los argumentos se terminan de separar con `_translator_method_separator` y `_translator_arg_separator`, todos son almacenados en un array de strings. Luego `_translator_make_header` se encarga de armar la cabecera del mensaje y `_translator_make_body` el cuerpo. Una vez armado se tiene el struct translator_t con todos la informacion necesaria para enviar el mensaje.
+
 
 #### Server
 
