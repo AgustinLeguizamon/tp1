@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "socket.h"
-#include "server.h"
+#include "common_socket.h"
+#include "server_server.h"
 
 int main(int argc, char const *argv[]){	
 	server_t server;

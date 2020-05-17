@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <byteswap.h>
 #include <arpa/inet.h>
-#include "translator.h"
+#include "client_translator.h"
 
 #define HEADER_SIGNATURE_LEN 16
 #define ARRAY_MIN 8 // 4 bytes + 1 entero 
@@ -14,8 +14,130 @@
 #define PARENTHESIS '('
 #define RIGHT_PARENTHESIS ')'
 
-#define N_WORDS 36 //4 + 32 parametros cantidad de palabras para buffer
+/*crea un array en el heap para almacenar el cuerpo del mensaje*/
+static int _translator_make_body(translator_t *self, 
+	char* input_line, int n_arg);
 
+
+/*concatena los parametros y los strings para conformar
+el cuerpo del mensaje segun protocolo dbus
+*/
+static int _translator_append_body(char** cursor, char* input_line, int n_arg);
+
+/*Arma el header concatenando cada uno de los parametros
+del array
+*/
+static int _translator_make_header(translator_t *self, 
+	int n_arg, int id, char* input_line);
+
+
+/*Arma el parametro firma del header y lo agrega al header
+*/
+static int _translator_append_header_signature(char** cursor, 
+	int body_len, int id, int total_header_len);
+
+/* Arma el parametro ruta y lo agrega al header
+*/
+static int _translator_append_path(char** cursor, char* word);
+
+/* Arma el parametro ruta y lo agrega al header
+*/
+static int _translator_append_destiny(char** cursor, char* word);
+
+
+/* Arma el parametro interfaz y lo agrega al header
+*/
+static int _translator_append_interface(char** cursor, char* interface);
+
+
+/* Arma el parametro metodo y lo agrega al header
+*/
+static int _translator_append_method(char** cursor, char* method);
+
+
+/* Arma el parametro firma y lo agrega al header
+*/
+static int _translator_append_signature(char** cursor, int n_arg);
+
+/*Convierte valores a little endian independientemente
+de su endianess
+*/
+static uint32_t _translator_value_to_little_endian(uint32_t value);
+
+/*Calcula el largo de un string redondeando a multipo de 8
+*/
+static int _translator_calculate_len(char* word);
+
+/*Calcula el largo del cuerpo
+*/
+static int _translator_calculate_body_len(char* input_line);
+
+/*Calcula el largo del parametro firma
+*/
+static int _translator_calculate_signature_len(int n_arg);
+
+/* Devuelve @param value redondeado a multiplo de 8
+*/
+static int _translator_round_up(int value);
+
+/*Agrega \0 como separador de cada palabra y argumento del @param input_line
+*/
+static int _translator_transform_line(char* input_line);
+
+
+int _translator_transform_line(char* input_line){
+	int i=0;
+	char* end_of_word = strchr(input_line, ' ');
+	while(i < (OFFSET-1)){
+		*end_of_word = '\0';
+		end_of_word = strchr(end_of_word+1, ' ');
+		i++;
+	}
+
+	char *cursor = input_line;
+	cursor += strlen(cursor)+1; 
+	cursor += strlen(cursor)+1;
+	cursor += strlen(cursor)+1;
+	char* method_and_args = cursor;
+	
+	//method and arg separator
+
+	end_of_word = strchr(method_and_args, '(');
+	*end_of_word = '\0';
+	char* method = method_and_args;
+
+	char* save_ptr = end_of_word;
+	end_of_word = strchr(end_of_word+1, ',');
+	while(end_of_word != NULL){
+		*end_of_word = '\0';
+		save_ptr = end_of_word;
+		end_of_word = strchr(end_of_word+1, ',');
+	}
+	end_of_word = strchr(save_ptr+1, ')');
+	*end_of_word = '\0';
+	
+	cursor = method_and_args;	
+	cursor += strlen(method)+1;
+
+	while(*cursor != '\0'){
+		char* arg = cursor;
+		cursor += strlen(arg)+1;		
+	}
+
+	//cuenta todas las palabras
+	cursor = input_line;
+	int cant_arg=0;
+	while(*cursor != '\0'){
+		cursor += strlen(cursor)+1;
+		cant_arg++;
+	}
+
+	//devuelvo la cantidad de argumentos (resto las 4 primeras palabras)
+	return (cant_arg - OFFSET);
+}
+
+
+//ctor
 int translator_create(translator_t *self){
 	self->header_len = 0;
 	self->body_len = 0;
@@ -23,115 +145,46 @@ int translator_create(translator_t *self){
 	return 0;
 }
 
-int _translator_method_separator(char words[][WORD_BUF]){	
-	const char delim = PARENTHESIS;
-	char* arg_ptr = strchr(words[3], delim);
-	char method[WORD_BUF]="";
-
-	int word_len = strlen(words[3]);
-	int arg_len= strlen(arg_ptr);
-	int dif = word_len - arg_len;
-	
-	memcpy(method, words[3], dif);
-	memset(words[3], 0, WORD_BUF);
-	memcpy(words[3], method, dif);
-
-	return 0;
-}
-
-int _translator_arg_separator(char words[][WORD_BUF], char* arg_ptr){
-	int j = OFFSET, n_arg = 0;
-	char word_buffer[WORD_BUF]="";
-	char c = 0;
-	int i = 0, k=0;
-	
-	i++; //salteo parentesis
-
-	c = arg_ptr[i]; 
-	while(c != ')'){
-		if (c != ','){
-			word_buffer[k] = c;
-			k++;
-		}
-		if (c == ','){
-			strncpy(words[j], word_buffer, WORD_BUF);
-			memset(word_buffer, 0 ,WORD_BUF);
-			j++;
-			n_arg++;
-			k = 0;
-		}
-		i++;
-		c = arg_ptr[i];
-	}
-
-	if (i > 1){
-		n_arg++;
-		strncpy(words[j], word_buffer, WORD_BUF);
-	}
-	
-	return n_arg;
-}
-
-int _translator_separator(char* input_line, char words[][WORD_BUF]){
-	char destiny[WORD_BUF], path[WORD_BUF];
-	char interface[WORD_BUF], method_and_args[WORD_BUF]; 	
-	const char delim = PARENTHESIS;
-	char* arg_ptr = strchr(input_line, delim);
-	int n_arg;
-
-	sscanf(input_line, "%s %s %s %s",
-		destiny, path, interface, method_and_args);
-	
-	strncpy(words[0], destiny, WORD_BUF);
-	strncpy(words[1], path, WORD_BUF);
-	strncpy(words[2], interface, WORD_BUF);
-	strncpy(words[3], method_and_args, WORD_BUF);
-
-	_translator_method_separator(words);
-	n_arg = _translator_arg_separator(words, arg_ptr);
-
-	return n_arg;
-}
 
 int translator_make_message(translator_t *self, file_reader_t *file_reader, 
 		int id){
-	char words[N_WORDS][WORD_BUF];
 	int n_arg=0;
 
 	char* input_line = file_reader->input_line;
 
-	/*inicializao matriz*/
-	for (int i = 0; i < N_WORDS; ++i){
-		memset(words[i],0,sizeof(words[i]));
-	}
-
-	n_arg = _translator_separator(input_line, words);
-	_translator_make_header(self, n_arg, id, words);
-	_translator_make_body(self, words, n_arg);
+	n_arg = _translator_transform_line(input_line);
+	_translator_make_header(self, n_arg, id, input_line);
+	_translator_make_body(self, input_line, n_arg);
 
 	return 0;
 }
 
-int _translator_make_body(translator_t *self, char words[][WORD_BUF], 
+int _translator_make_body(translator_t *self, char* input_line, 
 		int n_arg){
-	int body_len = _translator_calculate_body_len(words, n_arg);
+	int body_len = _translator_calculate_body_len(input_line);
 	char* body = malloc(body_len);
     char* cursor = body;
 
     memset(body, 0, body_len);
 
-	_translator_append_body(&cursor, words, n_arg);
+	_translator_append_body(&cursor, input_line, n_arg);
 
 	self->body = body;
 
 	return 0;
 }
 
-int _translator_append_body(char** cursor, char words[][WORD_BUF], int n_arg){
-	char* a_parameter;
+int _translator_append_body(char** cursor, char* input_line, int n_arg){
+	char* word_cursor = input_line;
+	int i=0;
+	while(i < OFFSET){
+		word_cursor += strlen(word_cursor)+1;
+		i++;
+	}
 
+	char* a_parameter;
 	for (int i = OFFSET; i < OFFSET + n_arg; ++i){
-		a_parameter = words[i];
+		a_parameter = word_cursor;
 		*((uint32_t*)(*cursor)) = 
 			_translator_value_to_little_endian(strlen(a_parameter));
 		(*cursor)+= sizeof(uint32_t);
@@ -140,6 +193,7 @@ int _translator_append_body(char** cursor, char words[][WORD_BUF], int n_arg){
 			(*cursor)++;
 		}
 		(*cursor)++;
+		word_cursor += strlen(word_cursor)+1;
 	}
 	return 0;
 }
@@ -160,35 +214,45 @@ int _translator_calculate_signature_len(int n_arg){
 
 
 int _translator_make_header(translator_t *self, int n_arg, 
-		int id, char words[][WORD_BUF]){
-	int dest_len, path_len, intf_len, method_len, body_len, signature_len = 0;
-	int total_header_len;
-	char* cursor;
+		int id, char* input_line){
+	char *cursor = input_line;
+	char* destiny = cursor;
+	
+	cursor += strlen(destiny)+1; 
+	char* path = cursor;
+	
+	cursor += strlen(path)+1;
+	char* interface = cursor;
+	
+	cursor += strlen(interface)+1;
+	char* method = cursor;
 
-	dest_len = _translator_calculate_len(words[0]);
-	path_len = _translator_calculate_len(words[1]);
-	intf_len = _translator_calculate_len(words[2]);
-	method_len = _translator_calculate_len(words[3]);
-	body_len = _translator_calculate_body_len(words, n_arg);
+	int dest_len = _translator_calculate_len(destiny);
+	int path_len = _translator_calculate_len(path);
+	int intf_len = _translator_calculate_len(interface);
+	int method_len = _translator_calculate_len(method);
+	int body_len = _translator_calculate_body_len(input_line);
 
 	/*para los ultimos 8 bytes del header*/
-	signature_len = _translator_calculate_signature_len(n_arg);
+	int signature_len = _translator_calculate_signature_len(n_arg);
 	
-	total_header_len = dest_len + path_len + intf_len + method_len + signature_len;
+	int total_header_len = dest_len + path_len + 
+		intf_len + method_len + signature_len;
 
 	char* header = malloc(total_header_len + HEADER_SIGNATURE_LEN);
     memset(header, 0, total_header_len + HEADER_SIGNATURE_LEN);
 
-    cursor = header;
+    char* header_cursor = header;
 
-	_translator_append_header_signature(&cursor, body_len, id, total_header_len);
-	_translator_append_path(&cursor, words[1]);
-	_translator_append_destiny(&cursor, words[0]);
-	_translator_append_interface(&cursor, words[2]);
-	_translator_append_method(&cursor, words[3]);
+	_translator_append_header_signature(&header_cursor, 
+			body_len, id, total_header_len);
+	_translator_append_path(&header_cursor, path);
+	_translator_append_destiny(&header_cursor, destiny);
+	_translator_append_interface(&header_cursor, interface);
+	_translator_append_method(&header_cursor, method);
 
 	if(n_arg > 0){
-		_translator_append_signature(&cursor, n_arg);
+		_translator_append_signature(&header_cursor, n_arg);
 	}
 
 	self->header= header;
@@ -238,8 +302,12 @@ int _translator_append_path(char** cursor, char* word){
 
 	int path_with_padding = _translator_round_up(strlen(word)+1);
 	for (int i = 0; i < path_with_padding; ++i){
-		**cursor = word[i];
-		(*cursor)++;
+		if(i > strlen(word)){
+			**cursor = 0;
+		} else {
+			**cursor = word[i];
+		}
+			(*cursor)++;
 	}
 	
 	return 0;
@@ -260,8 +328,12 @@ int _translator_append_destiny(char** cursor, char* word){
 	
 	int destiny_with_padding = _translator_round_up(strlen(word)+1);
 	for (int i = 0; i < destiny_with_padding; ++i){
-		**cursor = word[i];
-		(*cursor)++;
+		if(i > strlen(word)){
+			**cursor = 0;
+		} else {
+			**cursor = word[i];
+		}
+			(*cursor)++;
 	}
 	
 	return 0;
@@ -285,7 +357,11 @@ int _translator_append_interface(char** cursor, char* interface){
 	int interface_with_padding = 
 		_translator_round_up(strlen(interface)+1); 
 	for (int i = 0; i < interface_with_padding; ++i){
-		**cursor = interface[i];
+		if(i > strlen(interface)){
+			**cursor = 0;
+		} else {
+			**cursor = interface[i];
+		}
 		(*cursor)++;
 	}
 
@@ -309,7 +385,11 @@ int _translator_append_method(char** cursor, char* method){
 	int method_with_padding = 
 		_translator_round_up(strlen(method)+1); 
 	for (int i = 0; i < method_with_padding; ++i){
-		**cursor = method[i];
+		if(i > strlen(method)){
+			**cursor = 0;
+		} else {
+			**cursor = method[i];
+		}
 		(*cursor)++;
 	}
 
@@ -317,8 +397,6 @@ int _translator_append_method(char** cursor, char* method){
 }
 
 int _translator_append_signature(char** cursor, int n_arg){
-	int i=0, signature_len_with_padding, padding;
-
 	**cursor = 8;
 	(*cursor)++;
 	**cursor = 1;
@@ -330,15 +408,16 @@ int _translator_append_signature(char** cursor, int n_arg){
 	**cursor = n_arg;
 	(*cursor)++;
 
-	for (i = 0; i < n_arg; ++i){
+	for (int i = 0; i < n_arg; ++i){
 		**cursor = 's';
 		(*cursor)++;
 	}
 
-	signature_len_with_padding = _translator_round_up(SIGNATURE_MIN_LEN+n_arg+1);
-	padding = signature_len_with_padding - (SIGNATURE_MIN_LEN + n_arg);
+	int signature_len_with_padding = 
+		_translator_round_up(SIGNATURE_MIN_LEN+n_arg+1);
+	int padding = signature_len_with_padding - (SIGNATURE_MIN_LEN + n_arg);
 
-	for (i = 0; i < padding; ++i){
+	for (int i = 0; i < padding; ++i){
 		(*cursor)++; //salto los bytes dejando 00
 	}
 
@@ -363,12 +442,21 @@ int _translator_calculate_len(char* word){
 	return len;
 }
 
-int _translator_calculate_body_len(char words[][WORD_BUF], int n_arg){
-	int body_len = 0;
-
-	for (int i = OFFSET; i < n_arg+OFFSET; i++){
-		body_len += sizeof(int) + strlen(words[i]) + 1; //trailing '/0'
+int _translator_calculate_body_len(char* input_line){
+	char* cursor = input_line;
+	int i =0;
+	//salteo primeros 4
+	while(i < OFFSET){
+		cursor += strlen(cursor)+1;
+		i++;
 	}
+	
+	int body_len = 0;
+	while(*cursor != '\0'){
+		body_len += sizeof(uint32_t) + strlen(cursor) + 1; //trailing '/0'
+		cursor += strlen(cursor)+1;
+	}
+	
 
 	return body_len;
 }
