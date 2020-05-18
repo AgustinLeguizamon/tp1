@@ -10,9 +10,6 @@
 #define BYTE_ALIGN 8 // para redondeo
 #define OFFSET 4 //los primeros 4 parametros
 #define SIGNATURE_MIN_LEN 5
-#define COMMA ", "
-#define PARENTHESIS '('
-#define RIGHT_PARENTHESIS ')'
 
 /*crea un array en el heap para almacenar el cuerpo del mensaje*/
 static int _translator_make_body(translator_t *self, 
@@ -38,11 +35,11 @@ static int _translator_append_header_signature(char** cursor,
 
 /* Arma el parametro ruta y lo agrega al header
 */
-static int _translator_append_path(char** cursor, char* word);
+static int _translator_append_path(char** cursor, char* path);
 
 /* Arma el parametro ruta y lo agrega al header
 */
-static int _translator_append_destiny(char** cursor, char* word);
+static int _translator_append_destiny(char** cursor, char* destiny);
 
 
 /* Arma el parametro interfaz y lo agrega al header
@@ -93,15 +90,13 @@ int _translator_transform_line(char* input_line){
 		end_of_word = strchr(end_of_word+1, ' ');
 		i++;
 	}
-
 	char *cursor = input_line;
 	cursor += strlen(cursor)+1; 
 	cursor += strlen(cursor)+1;
 	cursor += strlen(cursor)+1;
 	char* method_and_args = cursor;
-	
-	//method and arg separator
 
+	//separo metodo de argumentos	
 	end_of_word = strchr(method_and_args, '(');
 	*end_of_word = '\0';
 	char* method = method_and_args;
@@ -287,7 +282,7 @@ int	_translator_append_header_signature(char** cursor, int body_len,
 }
 
 
-int _translator_append_path(char** cursor, char* word){
+int _translator_append_path(char** cursor, char* path){
 	**cursor = 1;
 	(*cursor)++;
 	**cursor = 1;
@@ -297,15 +292,15 @@ int _translator_append_path(char** cursor, char* word){
 	**cursor = 0;
 	(*cursor)++;
 
-	*((uint32_t*)(*cursor)) = _translator_value_to_little_endian(strlen(word));
+	*((uint32_t*)(*cursor)) = _translator_value_to_little_endian(strlen(path));
 	(*cursor) += 4;
 
-	int path_with_padding = _translator_round_up(strlen(word)+1);
+	int path_with_padding = _translator_round_up(strlen(path)+1);
 	for (int i = 0; i < path_with_padding; ++i){
-		if(i > strlen(word)){
+		if(i > strlen(path)){
 			**cursor = 0;
 		} else {
-			**cursor = word[i];
+			**cursor = path[i];
 		}
 			(*cursor)++;
 	}
@@ -313,7 +308,7 @@ int _translator_append_path(char** cursor, char* word){
 	return 0;
 }
 
-int _translator_append_destiny(char** cursor, char* word){
+int _translator_append_destiny(char** cursor, char* destiny){
 	**cursor = 6;
 	(*cursor)++;
 	**cursor = 1;
@@ -323,15 +318,15 @@ int _translator_append_destiny(char** cursor, char* word){
 	**cursor = 0;
 	(*cursor)++;
 
-	*((uint32_t*)(*cursor)) = _translator_value_to_little_endian(strlen(word));
+	*((uint32_t*)(*cursor)) = _translator_value_to_little_endian(strlen(destiny));
 	(*cursor) += 4;
 	
-	int destiny_with_padding = _translator_round_up(strlen(word)+1);
+	int destiny_with_padding = _translator_round_up(strlen(destiny)+1);
 	for (int i = 0; i < destiny_with_padding; ++i){
-		if(i > strlen(word)){
+		if(i > strlen(destiny)){
 			**cursor = 0;
 		} else {
-			**cursor = word[i];
+			**cursor = destiny[i];
 		}
 			(*cursor)++;
 	}

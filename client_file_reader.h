@@ -21,15 +21,6 @@ int file_reader_create(file_reader_t *self, int argc, const char* file_name);
 */
 int file_reader_read_line(file_reader_t *self);
 
-/*Lee los siguientes 32 bytes del input o hasta encontrar \n y
-los coloca en @param buffer
-*/
-int _file_reader_read_block(file_reader_t *self, char buffer[]);
-
-/*Setea 0 en os bytes del buffer desde el \n en adelante
-*/
-int _file_reader_clean_buffer(char buffer[], int index);
-
 /*devuelve true si no se llego al EOF
 */
 bool file_reader_status(file_reader_t *self);

@@ -53,6 +53,12 @@ int socket_bind_and_listen(socket_t *self, const char* service){
         }
 	}
 
+
+	if(!success){
+		printf("socket binding failed \n");
+		return ERROR;
+	}
+
 	freeaddrinfo(result);
 
 	return 0;
@@ -96,6 +102,11 @@ int socket_connect(socket_t *self, const char* host_name, const char* service){
         }
 	}
 
+	if(!success){
+		printf("socket failed to connect\n");
+		return ERROR;
+	}
+
 	freeaddrinfo(result);
 
 	return 0;
@@ -109,6 +120,16 @@ int socket_send(socket_t *self, const char* buffer, size_t length){
 		n_send = send(self->socket_file_descriptor, buffer, length, MSG_NOSIGNAL);
 		bytes_sent += n_send;
 	}
+
+	if(n_send == 0){
+		/*Cerraron el socket*/
+		return 0;
+	}
+	if(n_send == -1){
+		printf("Socket send error\n");
+		return ERROR;
+	}
+	
 	
 	return n_send;
 }
@@ -121,7 +142,16 @@ int socket_receive(socket_t *self, char* buffer, size_t length){
 	while (bytes_recv < length && n_recv > 0){
 		n_recv = recv(self->socket_file_descriptor, buffer, length, 0);
 		bytes_recv += n_recv;
-	}	
+	}
+	if(n_recv == 0){
+	/*Cerraron el socket*/
+	return 0;
+	}
+	if(n_recv == -1){
+		printf("Socket recv error\n");
+		return ERROR;
+	}
+	
 	return n_recv;
 }
 
