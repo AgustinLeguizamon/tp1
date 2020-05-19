@@ -7,6 +7,7 @@ Padrón: 99535
 
 Link Github: https://github.com/AgustinLeguizamon/tp1
 
+Instancia de entrega: 2
 
 ### Introducción:
 A continuación se da una breve descripción de los TDAs que componen la implementación del protocolo dbus para la comunicación cliente/servidor a través de sockets TCP en lenguaje C.
@@ -14,30 +15,39 @@ A continuación se da una breve descripción de los TDAs que componen la impleme
 ![diagrama](img/TallerTP1.png)
 Figura 1 - Relación entre los TDAs
 
-A pesar de que C no tiene clases, el estilo UML del diagrama de clases se utiliza para representar la interacción entre los distintos TDA.
-
 #### Socket
 
-TDA socket está encargada de todo lo relacionado al canal de comunicación TCP y esto incluye, la creación de los sockets(acep, server, cliente), el establecimiento del canal, envío y recepción de datos y el cierre del canal con la correspondiente liberación de recursos.
+##### Manejo de errores
 
-Tanto **client** como **server** utilizan sockets (uno y dos respectivamente y para este trabajo) para poder establecer un canal de comunicación. El TDA **socket** posee la función `socket_bind_and_listen` que recibe al `acep_socket` y le asigna la dirección que recibe por parámetro fijando un límite a las conexiones que están en espera, desde ese momento el socket está listo para recibir conexiones. La función `socket_accept` recibe a los dos sockets del **server**(acep_socket, server_socket) y con la dirección dada por `acep_socket` se crea un nuevo "file descriptor" que se asigna al `server_socket` para aceptar una conexión.
-De parte del cliente está la función `socket_connect` que recibe al `client_socket`, la IP y la dirección antes mencionada. Utilizando la función `getaddrinfo` obtenemos una lista de direcciones que se itera hasta lograr una conexión con aquella que tenga un socket abierto.
+La funcion `socket_connect` puede fallar en la conexion del socket, por lo tanto en el caso de que ninguna de la lista de direcciones dadas por `getaddrinfo` se retorno un -1 y se imprimira por pantalla el mensaje correspondiente.
+Lo mismo pasa con la función `socket_bind_and_listen` que puede fallar al momento de enlazar a la direccion IP, en dicho caso se retornara un -1 y se imprimira por pantalla el mensaje de error.
+Las funciones `socket_send` y `socket_recieve` pueden devolver tres valores, 0 que es el caso del que socket se haya cerrado que conforma parte de la ejecución normal, el numero de bytes enviados/recibidos, y -1 uno en caso de un error inesperado que provoca que la funcion retorne -1 y se imprima por pantalla el mensaje de error. 
 
-#### Client
 
-Crea al lector de archivos (**fileReader**) y al socket asociado (**client_socket**) y levanta un canal de comunicación con `socket_connect`, la función `client_run` se encarga de obtener una línea de texto que se pasa a la función `translator_dbus` para aplicar el protocolo DBUS y luego enviarla al **server** a través del canal de comunicación, recibe la respuesta del servidor y la imprime en pantalla con `_client_show`.
+#### File Reader
 
-En el primer `socket_send` se envía el "header" del mensaje y luego en el segundo el cuerpo.
+Para la lectura del archivo se usan 3 buffers, uno local a la función `file_reader_read_line`de tamaño fijo de 32 bytes para cada lectura, uno dinamico que alojará la linea entera y un buffer estatico de 32 bytes atributo del struct `file_reader_t` que posee los caracteres de la linea siguiente.
+Basicamente se leen bloques de 32 bytes y se expande el tamaño del buffer dinamico hasta encontra un salto de linea, en ese momento se guardan los caracteres que se encuentran despues del salto de linea (pertenecen a la siguiente) y se borran de la linea actual de manera de solo tener esa linea en el buffer dinamico.
+Luego en el siguiente llamado al comienzo  se agrega el buffer del struct (que tiene la primera parte de la ahora actual linea) al buffer dinamico y se repite el proceso.
 
 #### Translator
 
-**translator** se encarga aplicar el protocolo a la línea de texto dada por **fileReader**.
-`translator_make_message` es llamada por **client** para ejecutar esta tarea. Primero `_translator_separator_`separar la línea de texto en cada parámetro (destino, ruta, interfaz) luego el método y los argumentos se terminan de separar con `_translator_method_separator` y `_translator_arg_separator`, todos son almacenados en un array de strings. Luego `_translator_make_header` se encarga de armar la cabecera del mensaje y `_translator_make_body` el cuerpo. Una vez armado se tiene el struct translator_t con todos la información necesaria para enviar el mensaje.
-
+La función `_translator_transform_line` se encarga de transformar la linea de texto `inpit_line` cambiando la separacion entre cada palabra y parámetro con un '\0'.
+Por ejemplo:
+```
+taller.hellodbus /taller/greeter taller.Dbus.Greeter printHello(Hola!)
+```
+Al aplicar la función
+```
+taller\0hellodbus\0/taller/greeter\0taller.Dbus.Greeter\0printHello\0Hola!\0
+```
+De esta manera se utiliza el mismo array, sin utilizar mas memoria dinamica, para la construcción del mensaje segun el protocolo. Se recorre con un cursor que apunta al comienzo de cada "string" y al que se le pueden aplicar las operaciones estandar de string dado que cada uno termina en \0, luego se mueve el cursor una cantidad de bytes igual al largo del string actual de manera de que apunte al siguiente y asi hasta haber recorrido toda la linea y realizado las acciones correspondientes con cada "string".
 
 #### Server
 
-El TDA **server** recibe los mensajes a través del **socket**, primero hace un `recive` de los 16 primero bytes de manera de obtener el largo del cuerpo, el id y el largo del array. Luego lee el resto del header con un `recieve` fijando el largo al del array obtenido en el primer `recieve` y por último un `recieve` para el cuerpo del mensaje.
+Para la recepcion del mensaje se utilizan 2 buffers dinamicos y uno estatico de 16 bytes(igual al tamaño de la firma del header del protocolo DBUS).
+Con el primer `socket_recieve` se reciben los primeros 16 bytes del header de donde se obtiene la longitud del cuerpo y la longitud del array del header. A partir de estos dos valores se crean los otros dos buffers dinámicos `header_buffer` y `body_buffer`.
+Luego se obtiene del `header_buffer` los parametros a imprimir en pantalla (ruta, destino, interfaz, etc) que se guardan en arrays dinamicos cuyo tamaño se obtiene del entero con la longitud del dato que conforma parte del parámetro.
 
 
 #### Comentarios sobre Protocolo DBUS
@@ -64,32 +74,27 @@ int _translator_append_path(char** cursor, char* word){
 
 	return 0;
   ```
-Luego la siguiente función tipo `_append_` sigue utiliza el  cursor para seguir agregando mas parametros tipo BYTE o tipo UINT32. Así hasta completar el header.
+Luego la siguiente función tipo `_append_` sigue utiliza el cursor para seguir agregando mas parametros tipo BYTE o tipo UINT32. Así hasta completar el header.
 
-En el lado del **server** con la misma lógica se recorre la tira de bytes con un cursor y se detiene hasta encontrar un tipo de parámetro (1 para ruta del objeto, 6 para string, etc) y desde ahí empieza a leer para obtener el string, esto se realiza en la función `_server_read_option(cursor, array_info[])`.
+En el lado del **server** con la misma lógica se recorre la tira de bytes con un cursor y se detiene hasta encontrar un tipo de parámetro (1 para ruta del objeto, 6 para string, etc) y desde ahí empieza a leer para obtener el string, esto se realiza en la función `_server_read_option`.
 
 ```
-char** _server_read_option(char** cursor, char input_string[]){
-	uint32_t option_len;
-
+char* _server_read_option(char** cursor, char* word){
 	(*cursor) += sizeof(uint32_t); //cursor apunta a long
-	option_len = *((uint32_t*) (*cursor));
-
+	uint32_t option_len = *((uint32_t*) (*cursor));
+	word = realloc(word, option_len+1);
+	memset(word, 0, option_len+1);
+					
 	(*cursor) += sizeof(uint32_t); //cursor apunta array
 	for (int i = 0; i < option_len+1; ++i){
-		input_string[i]=(**cursor);
+		word[i]=(**cursor);
 		(*cursor)++;
 	}
 
-	return cursor;
+	return word;
 }
 ```
 
-#### Comentarios de la entrega
+#### Manejo de errores
 
-1) El almacenamiento de los parámetros es en arreglos estáticos
-por lo que en mucho casos se utiliza más memoria de lo necesario.
-
-2) Para la implementación propuesta del protocolo se utilizaron solo tipos BYTE y UINT32, formando cada parámetro del array con solo esos dos tipos de datos. Para el momento de esta entrega no fue considerado el uso de STRUCTS para formar cada parámetro.
-
-
+En el caso de una falla en la ejecución del programa o de un comportamiento inseperado se busca la terminacion del programa (con la liberacion de los recursos) indicando donde se provoca el error. En este trabajo no se intenta recuperar de los errores por mas que haya casos en los que sea posible reintenar y poder seguir con la ejecución.
